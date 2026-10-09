@@ -17,7 +17,7 @@ authService.onAuthChanged(async user => {
   await initPaywall(user ? user.uid : null);
   if (user) renderUsageMeter("usage-meter-container", "analyses");
 });
-document.getElementById("nav-upgrade")?.addEventListener("click", () => showPricingModal("pro"));
+document.getElementById("nav-upgrade")?.addEventListener("click", (e) => { e.preventDefault(); showPricingModal("pro"); });
 document.getElementById("nav-manage")?.addEventListener("click", () => showPricingModal("pro"));
 
 initAuthModal(authService);
