@@ -1,4 +1,4 @@
-import { initPaywall, gate, showPricingModal, renderUsageMeter } from "./services/paywallUI.js";
+import { initPaywall, gate, requirePro, showPricingModal, renderUsageMeter } from "./services/paywallUI.js";
 import { validators, guardSubmit } from "./utils/validate.js";
 import { saveDoc, getUserDocs, tsToString } from "./services/firestoreService.js";
 import { apiFetch } from "./config/env.js";
@@ -40,6 +40,8 @@ async function review() {
 
   const desc = document.getElementById("portfolio-desc").value.trim();
   const url = document.getElementById("portfolio-url").value.trim();
+  // #94: paid from first use (opens the pricing modal when not subscribed).
+  if (!(await requirePro("analyses"))) return;
   clearToolError();
   document.getElementById("results").classList.add("hidden");
   setBusy(true);
