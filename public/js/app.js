@@ -45,7 +45,9 @@ async function review() {
   setBusy(true);
   try {
     const data = await apiFetch("/api/portfolio-review", { portfolioUrl: url, portfolioDesc: desc, targetRole: document.getElementById("target-role").value.trim(), targetCompany: document.getElementById("target-company").value.trim(), careerStage: document.getElementById("career-stage").value });
-    const score = Number(data?.overall);
+    // CQA-RIGOR-PORTFOLIO-RESULT-SCHEMA: Number(null/''/false/[]) is 0, so only a number or a numeric string counts as a score
+    const rawScore = data?.overall;
+    const score = (typeof rawScore === 'number' || (typeof rawScore === 'string' && rawScore.trim() !== '')) ? Number(rawScore) : NaN;
     if (!data || !Number.isFinite(score)) throw new Error("The server returned an incomplete review.");
     lastResult = data;
     renderResults(data);
@@ -72,10 +74,12 @@ function renderResults(data) {
   const grid = document.getElementById("review-grid");
   const catList = Array.isArray(data.categories) ? data.categories : [];
   const cats = catList.map((c, i) => {
-    const cs = Math.max(0, Math.min(100, Number(c.score) || 0));
+    const hasScore = typeof c.score === 'number' ? Number.isFinite(c.score) : (typeof c.score === 'string' && c.score.trim() !== '' && Number.isFinite(Number(c.score)));
+    const cs = hasScore ? Math.max(0, Math.min(100, Number(c.score))) : 0;
+    const csLabel = hasScore ? `${cs}/100` : 'score unavailable';
     // Odd category count: stretch the last one so the 2-col grid has no orphan cell
     const wide = catList.length % 2 === 1 && i === catList.length - 1 ? " wide" : "";
-    return `<div class="result-block${wide}"><h4>${escapeHtml(c.name || "")} · ${cs}/100</h4><div class="cat-score-bar"><div class="cat-fill" style="width:${cs}%;background:${cs >= 75 ? 'var(--gold)' : 'var(--navy-light)'}"></div></div><p class="cat-feedback">${escapeHtml(c.feedback || "")}</p></div>`;
+    return `<div class="result-block${wide}"><h4>${escapeHtml(c.name || "")} · ${csLabel}</h4><div class="cat-score-bar"><div class="cat-fill" style="width:${cs}%;background:${cs >= 75 ? 'var(--gold)' : 'var(--navy-light)'}"></div></div><p class="cat-feedback">${escapeHtml(c.feedback || "")}</p></div>`;
   }).join("");
   const strengths = data.strengths?.length ? `<div class="result-block wide"><h4>Strengths</h4><ul>${listItems(data.strengths)}</ul></div>` : "";
   const fixes = data.topFixes?.length ? `<div class="result-block wide"><h4>Top Fixes</h4><ul>${listItems(data.topFixes)}</ul></div>` : "";
